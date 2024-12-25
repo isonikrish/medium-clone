@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client/edge.js";
 import { withAccelerate } from "@prisma/extension-accelerate";
 
-
 export async function handleCreateBlog(c: any) {
   const body = await c.req.json();
   const authorId = c.get("user").id;
@@ -50,7 +49,19 @@ export async function handleGetBlog(c: any) {
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
   try {
-    const blog = await prisma.blog.findFirst({ where: { id: Number(id) } });
+    const blog = await prisma.blog.findFirst({
+      where: { id: Number(id) },
+      select: {
+        content: true,
+        title: true,
+        id: true,
+        author: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
     if (!blog) return c.json({ msg: "There is no blog" }, 400);
 
     return c.json(blog);
@@ -77,9 +88,8 @@ export async function handleGetBlogs(c: any) {
       },
     });
 
-    return c.json(blogs);
+    return c.json(blogs, 200);
   } catch (error) {
-
     return c.json({ msg: "Internal server error" }, 500);
   }
 }
